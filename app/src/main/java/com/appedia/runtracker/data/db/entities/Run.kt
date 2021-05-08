@@ -9,27 +9,27 @@ import androidx.room.PrimaryKey
 data class Run (
 
         @ColumnInfo(name = "image")
-        private var image : Bitmap? = null,
+        var image : Bitmap? = null,
 
         @ColumnInfo(name = "date_millis")
-        private var runDateInMillis : Long = 0L,
+        var runDateInMillis : Long = 0L,
 
         @ColumnInfo(name = "average_speed_kmph")
-        private var avgSpeedKMPH : Float = 0F,
+        var avgSpeedKMPH : Float = 0F,
 
         @ColumnInfo(name = "distance_mtr")
-        private var distanceMTR : Int = 0,
+        var distanceMTR : Int = 0,
 
         @ColumnInfo(name = "duration_millis")
-        private var runDurationInMillis : Long = 0L,
+        var runDurationInMillis : Long = 0L,
 
         @ColumnInfo(name = "calories_burned")
-        private var caloriesBurned : Int = 0
+        var caloriesBurned : Int = 0
 
 ){
 
     @PrimaryKey(autoGenerate = true)
-    private var id : Int = 0
+    var id : Int = 0
 
 }
 
