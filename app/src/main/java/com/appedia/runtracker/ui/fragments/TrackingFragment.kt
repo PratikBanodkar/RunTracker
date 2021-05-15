@@ -32,6 +32,7 @@ class TrackingFragment : Fragment() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: FragmentTrackingBinding
     private var map: GoogleMap? = null
+    private val TAG = TrackingFragment::class.java.simpleName
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,9 +47,28 @@ class TrackingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.mapView.onCreate(savedInstanceState)
+        if(savedInstanceState != null){
+            updateButtonsBasedOnServiceState(TrackingService.serviceState.value)
+        }
         getGoogleMap()
         initClickListeners()
         observeServiceData()
+    }
+
+    private fun updateButtonsBasedOnServiceState(serviceState: ServiceState?) {
+        serviceState?.let {
+            when(it){
+                ServiceState.RUNNING -> {
+                    showPauseButton()
+                    showStopButton()
+                }
+                ServiceState.PAUSED -> {
+                    showPlayButton()
+                    showStopButton()
+                }
+                else -> {}
+            }
+        }
     }
 
     private fun observeServiceData() {
