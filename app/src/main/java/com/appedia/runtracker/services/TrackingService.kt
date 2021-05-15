@@ -29,15 +29,8 @@ typealias ListOfPaths = MutableList<Path>
 
 class TrackingService : LifecycleService() {
 
-    enum class ServiceState {
-        INIT,
-        RUNNING,
-        PAUSED,
-        STOPPED
-    }
-
     private val TAG = TrackingService::class.java.simpleName
-    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
     companion object {
         var serviceState = MutableLiveData<ServiceState>()

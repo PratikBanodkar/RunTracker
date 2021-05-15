@@ -10,13 +10,20 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.appedia.runtracker.R
 import com.appedia.runtracker.databinding.FragmentTrackingBinding
+import com.appedia.runtracker.services.ListOfPaths
+import com.appedia.runtracker.services.ServiceState
 import com.appedia.runtracker.services.TrackingService
 import com.appedia.runtracker.ui.viewmodels.MainViewModel
+import com.appedia.runtracker.util.*
 import com.appedia.runtracker.util.Constants.ACTION_PAUSE_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_START_OR_RESUME_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_STOP_SERVICE
-import com.appedia.runtracker.util.show
+import com.appedia.runtracker.util.Constants.MAP_ZOOM
+import com.appedia.runtracker.util.Constants.POLYLINE_COLOR
+import com.appedia.runtracker.util.Constants.POLYLINE_WIDTH
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.PolylineOptions
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -41,6 +48,13 @@ class TrackingFragment : Fragment() {
         binding.mapView.onCreate(savedInstanceState)
         getGoogleMap()
         initClickListeners()
+        observeServiceData()
+    }
+
+    private fun observeServiceData() {
+        TrackingService.runPaths.observe(viewLifecycleOwner,{ listOfPaths ->
+            drawLatestPathFromListOfPaths(listOfPaths)
+        })
     }
 
     private fun initClickListeners() {
@@ -57,6 +71,7 @@ class TrackingFragment : Fragment() {
     private fun getGoogleMap() {
         binding.mapView.getMapAsync {
             map = it
+            drawAllPathsFromListOfPaths()
         }
     }
 
@@ -65,7 +80,7 @@ class TrackingFragment : Fragment() {
     }
 
     private fun startOrResumeTrackingService() {
-        if(TrackingService.serviceState.value == TrackingService.ServiceState.RUNNING) {
+        if(TrackingService.serviceState.value == ServiceState.RUNNING) {
             sendCommandToTrackingService(ACTION_PAUSE_SERVICE)
             showPlayButton()
         }
@@ -93,10 +108,10 @@ class TrackingFragment : Fragment() {
             requireContext().startService(it)
         }
 
-   /* private fun addLatestSinglePolyline() {
-        if (pathPoints.isNotEmpty() && pathPoints.last().size > 1) {
-            val preLastLatLng = pathPoints.last()[pathPoints.last().size - 2]
-            val lastLatLng = pathPoints.last().last()
+    private fun drawLatestPathFromListOfPaths(listOfPaths: ListOfPaths) {
+        if(listOfPaths.hasAtleastTwoPoints()){
+            val preLastLatLng = listOfPaths.getSecondLastPoint()
+            val lastLatLng = listOfPaths.getLastPoint()
             val polylineOptions = PolylineOptions()
                 .color(POLYLINE_COLOR)
                 .width(POLYLINE_WIDTH)
@@ -104,28 +119,31 @@ class TrackingFragment : Fragment() {
                 .add(lastLatLng)
             map?.addPolyline(polylineOptions)
         }
+        updateMapCameraToUserLocation(listOfPaths)
     }
 
-    private fun addAllPolylines() {
-        for (polyline in pathPoints) {
-            val polylineOptions = PolylineOptions()
-                .color(POLYLINE_COLOR)
-                .width(POLYLINE_WIDTH)
-                .addAll(polyline)
-            map?.addPolyline(polylineOptions)
-        }
-    }
-
-    private fun updateCameraToUser() {
-        if (pathPoints.isNotEmpty() && pathPoints.last().isNotEmpty()) {
+    private fun updateMapCameraToUserLocation(listOfPaths: ListOfPaths){
+        if (listOfPaths.hasAtleastOnePoint()) {
             map?.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(
-                    pathPoints.last().last(),
+                    listOfPaths.getLastPoint(),
                     MAP_ZOOM
                 )
             )
         }
-    }*/
+    }
+
+    private fun drawAllPathsFromListOfPaths() {
+        TrackingService.runPaths.value?.let { listOfPaths ->
+            for (path in listOfPaths) {
+                val polylineOptions = PolylineOptions()
+                    .color(POLYLINE_COLOR)
+                    .width(POLYLINE_WIDTH)
+                    .addAll(path)
+                map?.addPolyline(polylineOptions)
+            }
+        }
+    }
 
     override fun onResume() {
         super.onResume()
