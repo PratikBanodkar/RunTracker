@@ -5,22 +5,18 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.appedia.runtracker.R
 import com.appedia.runtracker.databinding.FragmentTrackingBinding
-import com.appedia.runtracker.services.SinglePolyLine
 import com.appedia.runtracker.services.TrackingService
 import com.appedia.runtracker.ui.viewmodels.MainViewModel
+import com.appedia.runtracker.util.Constants.ACTION_PAUSE_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_START_OR_RESUME_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_STOP_SERVICE
-import com.appedia.runtracker.util.Constants.MAP_ZOOM
-import com.appedia.runtracker.util.Constants.POLYLINE_COLOR
-import com.appedia.runtracker.util.Constants.POLYLINE_WIDTH
-import com.google.android.gms.maps.CameraUpdateFactory
+import com.appedia.runtracker.util.show
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.Polyline
-import com.google.android.gms.maps.model.PolylineOptions
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -29,8 +25,6 @@ class TrackingFragment : Fragment() {
     private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: FragmentTrackingBinding
     private var map: GoogleMap? = null
-    private var isTracking = false
-    private var pathPoints = mutableListOf<SinglePolyLine>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,16 +39,52 @@ class TrackingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.mapView.onCreate(savedInstanceState)
+        getGoogleMap()
+        initClickListeners()
+    }
+
+    private fun initClickListeners() {
+        binding.buttonPlayPause.setOnClickListener {
+            showStopButton()
+            startOrResumeTrackingService()
+
+        }
+        binding.buttonStop.setOnClickListener {
+            stopTrackingService()
+        }
+    }
+
+    private fun getGoogleMap() {
         binding.mapView.getMapAsync {
             map = it
         }
-        binding.buttonPlayPause.setOnClickListener {
-            binding.buttonStop.visibility = View.VISIBLE
+    }
+
+    private fun stopTrackingService() {
+        sendCommandToTrackingService(ACTION_STOP_SERVICE)
+    }
+
+    private fun startOrResumeTrackingService() {
+        if(TrackingService.serviceState.value == TrackingService.ServiceState.RUNNING) {
+            sendCommandToTrackingService(ACTION_PAUSE_SERVICE)
+            showPlayButton()
+        }
+        else {
             sendCommandToTrackingService(ACTION_START_OR_RESUME_SERVICE)
+            showPauseButton()
         }
-        binding.buttonStop.setOnClickListener {
-            sendCommandToTrackingService(ACTION_STOP_SERVICE)
-        }
+    }
+
+    private fun showStopButton() {
+        binding.buttonStop.show()
+    }
+
+    private fun showPauseButton(){
+        binding.buttonPlayPause.icon = ResourcesCompat.getDrawable(resources,R.drawable.ic_pause,null)
+    }
+
+    private fun showPlayButton(){
+        binding.buttonPlayPause.icon = ResourcesCompat.getDrawable(resources,R.drawable.ic_play,null)
     }
 
     private fun sendCommandToTrackingService(action: String) =
@@ -63,7 +93,7 @@ class TrackingFragment : Fragment() {
             requireContext().startService(it)
         }
 
-    private fun addLatestSinglePolyline() {
+   /* private fun addLatestSinglePolyline() {
         if (pathPoints.isNotEmpty() && pathPoints.last().size > 1) {
             val preLastLatLng = pathPoints.last()[pathPoints.last().size - 2]
             val lastLatLng = pathPoints.last().last()
@@ -95,7 +125,7 @@ class TrackingFragment : Fragment() {
                 )
             )
         }
-    }
+    }*/
 
     override fun onResume() {
         super.onResume()
