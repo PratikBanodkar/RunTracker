@@ -71,6 +71,7 @@ class TrackingFragment : Fragment() {
     private fun getGoogleMap() {
         binding.mapView.getMapAsync {
             map = it
+            drawAllPathsFromListOfPaths()
         }
     }
 
@@ -132,15 +133,17 @@ class TrackingFragment : Fragment() {
         }
     }
 
-   /* private fun addAllPolylines() {
-        for (polyline in pathPoints) {
-            val polylineOptions = PolylineOptions()
-                .color(POLYLINE_COLOR)
-                .width(POLYLINE_WIDTH)
-                .addAll(polyline)
-            map?.addPolyline(polylineOptions)
+    private fun drawAllPathsFromListOfPaths() {
+        TrackingService.runPaths.value?.let { listOfPaths ->
+            for (path in listOfPaths) {
+                val polylineOptions = PolylineOptions()
+                    .color(POLYLINE_COLOR)
+                    .width(POLYLINE_WIDTH)
+                    .addAll(path)
+                map?.addPolyline(polylineOptions)
+            }
         }
-    }*/
+    }
 
     override fun onResume() {
         super.onResume()
