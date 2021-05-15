@@ -1,5 +1,6 @@
 package com.appedia.runtracker.ui.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,7 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.appedia.runtracker.R
 import com.appedia.runtracker.databinding.FragmentTrackingBinding
+import com.appedia.runtracker.services.TrackingService
 import com.appedia.runtracker.ui.viewmodels.MainViewModel
+import com.appedia.runtracker.util.Constants.ACTION_START_OR_RESUME_SERVICE
+import com.appedia.runtracker.util.Constants.ACTION_STOP_SERVICE
 import com.google.android.gms.maps.GoogleMap
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -35,7 +39,21 @@ class TrackingFragment : Fragment() {
         binding.mapView.getMapAsync {
             map = it
         }
+        binding.buttonPlayPause.setOnClickListener {
+            binding.buttonStop.visibility = View.VISIBLE
+            sendCommandToTrackingService(ACTION_START_OR_RESUME_SERVICE)
+        }
+        binding.buttonStop.setOnClickListener {
+            sendCommandToTrackingService(ACTION_STOP_SERVICE)
+        }
     }
+
+    private fun sendCommandToTrackingService(action:String) =
+        Intent(requireContext(), TrackingService::class.java).also {
+            it.action = action
+            requireContext().startService(it)
+        }
+
 
     override fun onResume() {
         super.onResume()
