@@ -47,7 +47,7 @@ class TrackingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.mapView.onCreate(savedInstanceState)
-        if(savedInstanceState != null){
+        if (savedInstanceState != null) {
             updateButtonsBasedOnServiceState(TrackingService.serviceState.value)
         }
         getGoogleMap()
@@ -57,7 +57,7 @@ class TrackingFragment : Fragment() {
 
     private fun updateButtonsBasedOnServiceState(serviceState: ServiceState?) {
         serviceState?.let {
-            when(it){
+            when (it) {
                 ServiceState.RUNNING -> {
                     showPauseButton()
                     showStopButton()
@@ -66,14 +66,19 @@ class TrackingFragment : Fragment() {
                     showPlayButton()
                     showStopButton()
                 }
-                else -> {}
+                else -> {
+                }
             }
         }
     }
 
     private fun observeServiceData() {
-        TrackingService.runPaths.observe(viewLifecycleOwner,{ listOfPaths ->
+        TrackingService.runPaths.observe(viewLifecycleOwner, { listOfPaths ->
             drawLatestPathFromListOfPaths(listOfPaths)
+        })
+
+        RunTimer.runDuration.observe(viewLifecycleOwner, { runDuration ->
+            binding.textViewTimer.text = runDuration
         })
     }
 
@@ -100,13 +105,17 @@ class TrackingFragment : Fragment() {
     }
 
     private fun startOrResumeTrackingService() {
-        if(TrackingService.serviceState.value == ServiceState.RUNNING) {
-            sendCommandToTrackingService(ACTION_PAUSE_SERVICE)
-            showPlayButton()
-        }
-        else {
-            sendCommandToTrackingService(ACTION_START_OR_RESUME_SERVICE)
-            showPauseButton()
+        when (TrackingService.serviceState.value) {
+            // Service is Running. Then Pause and show Play button
+            ServiceState.RUNNING -> {
+                sendCommandToTrackingService(ACTION_PAUSE_SERVICE)
+                showPlayButton()
+            }
+            // Service needs to Start for first time or Resume from Paused state. Show pause button
+            else -> {
+                sendCommandToTrackingService(ACTION_START_OR_RESUME_SERVICE)
+                showPauseButton()
+            }
         }
     }
 
@@ -114,12 +123,14 @@ class TrackingFragment : Fragment() {
         binding.buttonStop.show()
     }
 
-    private fun showPauseButton(){
-        binding.buttonPlayPause.icon = ResourcesCompat.getDrawable(resources,R.drawable.ic_pause,null)
+    private fun showPauseButton() {
+        binding.buttonPlayPause.icon =
+            ResourcesCompat.getDrawable(resources, R.drawable.ic_pause, null)
     }
 
-    private fun showPlayButton(){
-        binding.buttonPlayPause.icon = ResourcesCompat.getDrawable(resources,R.drawable.ic_play,null)
+    private fun showPlayButton() {
+        binding.buttonPlayPause.icon =
+            ResourcesCompat.getDrawable(resources, R.drawable.ic_play, null)
     }
 
     private fun sendCommandToTrackingService(action: String) =
@@ -129,7 +140,7 @@ class TrackingFragment : Fragment() {
         }
 
     private fun drawLatestPathFromListOfPaths(listOfPaths: ListOfPaths) {
-        if(listOfPaths.hasAtleastTwoPoints()){
+        if (listOfPaths.hasAtleastTwoPoints()) {
             val preLastLatLng = listOfPaths.getSecondLastPoint()
             val lastLatLng = listOfPaths.getLastPoint()
             val polylineOptions = PolylineOptions()
@@ -142,7 +153,7 @@ class TrackingFragment : Fragment() {
         updateMapCameraToUserLocation(listOfPaths)
     }
 
-    private fun updateMapCameraToUserLocation(listOfPaths: ListOfPaths){
+    private fun updateMapCameraToUserLocation(listOfPaths: ListOfPaths) {
         if (listOfPaths.hasAtleastOnePoint()) {
             map?.animateCamera(
                 CameraUpdateFactory.newLatLngZoom(
