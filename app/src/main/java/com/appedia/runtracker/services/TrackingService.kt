@@ -22,15 +22,22 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 typealias Path = MutableList<LatLng>
 typealias ListOfPaths = MutableList<Path>
 
+@AndroidEntryPoint
 class TrackingService : LifecycleService() {
 
     private val TAG = TrackingService::class.java.simpleName
-    private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    private var runTimer = RunTimer()
+
+    @Inject
+    lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    @Inject
+    lateinit var runTimer : RunTimer
+
     private var firstRun = true
 
     companion object {
@@ -42,7 +49,6 @@ class TrackingService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         postInitialValues()
-        fusedLocationProviderClient = FusedLocationProviderClient(this)
         observeServiceState()
     }
 
