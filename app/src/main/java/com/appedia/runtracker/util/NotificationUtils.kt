@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.appedia.runtracker.R
 import com.appedia.runtracker.ui.MainActivity
+import com.appedia.runtracker.util.Constants.NOTIFICATION_ID
 
 object NotificationUtils {
 
@@ -40,14 +41,29 @@ object NotificationUtils {
             return notificationBuilder.build()
         }
 
-        private fun getMainActivityPendingIntent(context: Context) = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, MainActivity::class.java).also {
-                it.action = Constants.ACTION_SHOW_TRACKING_FRAGMENT
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
+    private fun getMainActivityPendingIntent(context: Context) = PendingIntent.getActivity(
+        context,
+        0,
+        Intent(context, MainActivity::class.java).also {
+            it.action = Constants.ACTION_SHOW_TRACKING_FRAGMENT
+        },
+        PendingIntent.FLAG_UPDATE_CURRENT
+    )
+
+    fun updateNotification(context: Context, notificationDisplayTime: String) {
+        val notificationBuilder =
+            NotificationCompat.Builder(context, Constants.NOTIFICATION_CHANNEL_ID)
+                .setAutoCancel(false)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.ic_run)
+                .setContentTitle("Run Tracker")
+                .setContentText(notificationDisplayTime)
+                .setContentIntent(getMainActivityPendingIntent(context))
+        val notification = notificationBuilder.build()
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(NOTIFICATION_ID, notification)
+    }
 
 
 }
