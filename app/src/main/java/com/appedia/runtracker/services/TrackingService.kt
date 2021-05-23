@@ -50,6 +50,7 @@ class TrackingService : LifecycleService() {
         super.onCreate()
         postInitialValues()
         observeServiceState()
+        observeTimer()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -83,7 +84,7 @@ class TrackingService : LifecycleService() {
                         startTrackingServiceInForeground()
                         runTimer.start()
                         firstRun = false
-                    }else{
+                    } else {
                         Log.d(TAG, "Resume location tracking")
                         resumeTrackingService()
                         runTimer.resume()
@@ -103,6 +104,17 @@ class TrackingService : LifecycleService() {
         })
     }
 
+    private fun observeTimer() {
+        RunTimer.runDurationNotification.observe(this, { notificationTimeString ->
+            serviceState.value?.let {
+                NotificationUtils.updateNotification(
+                    this, notificationTimeString,
+                    it
+                )
+            }
+        })
+    }
+
     private fun postInitialValues() {
         runPaths.postValue(mutableListOf())
         runDuration.postValue("00:00:00:00")
@@ -110,6 +122,12 @@ class TrackingService : LifecycleService() {
 
     private fun pauseTrackingService() {
         stopLocationUpdates()
+        RunTimer.runDurationNotification.value?.let {
+            NotificationUtils.updateNotification(
+                this,
+                it, ServiceState.PAUSED
+            )
+        }
     }
 
     private fun resumeTrackingService() {
