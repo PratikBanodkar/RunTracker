@@ -73,6 +73,11 @@ class TrackingFragment : Fragment() {
     }
 
     private fun observeServiceData() {
+        TrackingService.serviceState.observe(viewLifecycleOwner, { serviceState ->
+            updateButtonsBasedOnServiceState(serviceState)
+        })
+
+
         TrackingService.runPaths.observe(viewLifecycleOwner, { listOfPaths ->
             drawLatestPathFromListOfPaths(listOfPaths)
         })

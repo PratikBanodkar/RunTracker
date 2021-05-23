@@ -106,7 +106,12 @@ class TrackingService : LifecycleService() {
 
     private fun observeTimer() {
         RunTimer.runDurationNotification.observe(this, { notificationTimeString ->
-            NotificationUtils.updateNotification(this, notificationTimeString)
+            serviceState.value?.let {
+                NotificationUtils.updateNotification(
+                    this, notificationTimeString,
+                    it
+                )
+            }
         })
     }
 
@@ -117,6 +122,12 @@ class TrackingService : LifecycleService() {
 
     private fun pauseTrackingService() {
         stopLocationUpdates()
+        RunTimer.runDurationNotification.value?.let {
+            NotificationUtils.updateNotification(
+                this,
+                it, ServiceState.PAUSED
+            )
+        }
     }
 
     private fun resumeTrackingService() {
