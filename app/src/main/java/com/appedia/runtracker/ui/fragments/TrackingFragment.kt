@@ -5,9 +5,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.appedia.runtracker.R
 import com.appedia.runtracker.databinding.FragmentTrackingBinding
 import com.appedia.runtracker.services.ListOfPaths
@@ -24,7 +26,9 @@ import com.appedia.runtracker.util.Constants.POLYLINE_WIDTH
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
+
 
 @AndroidEntryPoint
 class TrackingFragment : Fragment() {
@@ -53,6 +57,17 @@ class TrackingFragment : Fragment() {
         getGoogleMap()
         initClickListeners()
         observeServiceData()
+        setUpBackPressedCallback()
+    }
+
+    private fun setUpBackPressedCallback() {
+        val callback: OnBackPressedCallback =
+            object : OnBackPressedCallback(true /* enabled by default */) {
+                override fun handleOnBackPressed() {
+                    onBackPressed()
+                }
+            }
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
     }
 
     private fun updateButtonsBasedOnServiceState(serviceState: ServiceState?) {
@@ -77,13 +92,13 @@ class TrackingFragment : Fragment() {
             updateButtonsBasedOnServiceState(serviceState)
         })
 
-
         TrackingService.runPaths.observe(viewLifecycleOwner, { listOfPaths ->
             drawLatestPathFromListOfPaths(listOfPaths)
         })
 
-        RunTimer.runDuration.observe(viewLifecycleOwner, { runDuration ->
-            binding.textViewTimer.text = runDuration
+        TrackingService.runTime.observe(viewLifecycleOwner, { runDuration ->
+            if (TrackingService.serviceState.value == ServiceState.RUNNING)
+                binding.textViewTimer.text = runDuration
         })
     }
 
@@ -106,7 +121,26 @@ class TrackingFragment : Fragment() {
     }
 
     private fun stopTrackingService() {
-        sendCommandToTrackingService(ACTION_STOP_SERVICE)
+        showCancelRunConfirmationAlert()
+    }
+
+    private fun showCancelRunConfirmationAlert() {
+        val alertDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.cancel_run))
+            .setIcon(R.drawable.ic_cancel)
+            .setMessage(getString(R.string.sure_want_to_cancel))
+            .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                sendCommandToTrackingService(ACTION_STOP_SERVICE)
+                onBackPressed()
+            }
+            .setNegativeButton(getString(R.string.no)) { dialog, _ ->
+                dialog.cancel()
+            }
+        alertDialog.show()
+    }
+
+    private fun onBackPressed() {
+        findNavController().popBackStack(R.id.homeFragment, false);
     }
 
     private fun startOrResumeTrackingService() {

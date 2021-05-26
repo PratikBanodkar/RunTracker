@@ -1,5 +1,6 @@
 package com.appedia.runtracker.util
 
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,12 +10,9 @@ import java.util.concurrent.TimeUnit
 
 class RunTimer {
 
-
-    companion object{
-        var runDuration = MutableLiveData<String>()
-        var runDurationNotification = MutableLiveData<String>()
-    }
-
+    private val TAG = "RunTimer"
+    var runDuration = MutableLiveData<String>()
+    var runDurationNotification = MutableLiveData<String>()
     private var startTimeStamp: Long = 0
     private var stopTime: Long = 0
     private var running = false
@@ -22,16 +20,20 @@ class RunTimer {
     private var lapTime = 0L
     private var lapStartTimeStamp = 0L
     private var nextSecondToLookFor = 1
+
     init {
+        Log.d(TAG, "---------------TIMER INIT---------------")
         this.startTimeStamp = System.currentTimeMillis()
         this.lapStartTimeStamp = System.currentTimeMillis()
     }
 
     fun start() {
+        Log.d(TAG, "---------------TIMER START---------------")
         running = true
         CoroutineScope(Dispatchers.Main).launch {
             while (running) {
                 lapTime = System.currentTimeMillis() - lapStartTimeStamp
+                Log.d(TAG, "TIMER POSTING NEW VALUE")
                 runDuration.postValue(getDisplayTime(totalRunTime + lapTime))
                 if (nextSecondHasElapsed(totalRunTime + lapTime)) {
                     runDurationNotification.postValue(getNotificationDisplayTime(totalRunTime + lapTime))
@@ -50,16 +52,19 @@ class RunTimer {
     }
 
     fun pause() {
+        Log.d(TAG, "---------------TIMER PAUSE---------------")
         running = false
     }
 
     fun resume() {
+        Log.d(TAG, "---------------TIMER RESUME---------------")
         running = true
         lapStartTimeStamp = System.currentTimeMillis()
         start()
     }
 
     fun stop() {
+        Log.d(TAG, "---------------TIMER STOP---------------")
         stopTime = System.currentTimeMillis()
         running = false
     }

@@ -15,7 +15,6 @@ import com.appedia.runtracker.util.Constants.LOCATION_UPDATE_INTERVAL
 import com.appedia.runtracker.util.Constants.NOTIFICATION_ID
 import com.appedia.runtracker.util.NotificationUtils
 import com.appedia.runtracker.util.PermissionUtils
-import com.appedia.runtracker.util.RunTimer
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -23,36 +22,48 @@ import com.google.android.gms.location.LocationRequest.PRIORITY_HIGH_ACCURACY
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.maps.model.LatLng
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
-typealias Path = MutableList<LatLng>
-typealias ListOfPaths = MutableList<Path>
-
 @AndroidEntryPoint
-class TrackingService : LifecycleService() {
+class NewTrackingService : LifecycleService() {
 
-    private val TAG = TrackingService::class.java.simpleName
+    private val TAG = NewTrackingService::class.java.simpleName
 
     @Inject
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
-    @Inject
-    lateinit var runTimer: RunTimer
+    /*@Inject
+    lateinit var runTimer: RunTimer*/
 
     private var firstRun = true
+    private var startTimeStamp: Long = 0
+    private var stopTime: Long = 0
+    private var running = false
+    private var totalRunTime = 0L
+    private var lapTime = 0L
+    private var lapStartTimeStamp = 0L
+    private var nextSecondToLookFor = 1
+
 
     companion object {
-        var serviceState = MutableLiveData<ServiceState>()
         val runPaths = MutableLiveData<ListOfPaths>()
-        val runTime = MutableLiveData<String>()
+
+        //val runTimeForUi = MutableLiveData<String>()
+        var serviceState = MutableLiveData<ServiceState>()
+        var runDuration = MutableLiveData<String>()
+        var runDurationNotification = MutableLiveData<String>()
     }
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "onCreate() called")
         postInitialValues()
         observeServiceState()
-        observeTimer()
+        observeTimerData()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -85,62 +96,79 @@ class TrackingService : LifecycleService() {
                     if (firstRun) {
                         Log.d(TAG, "Start location tracking")
                         startTrackingServiceInForeground()
-                        runTimer.start()
+                        startTimer()
+                        //runTimer.start()
                         firstRun = false
                     } else {
                         Log.d(TAG, "Resume location tracking")
                         resumeTrackingService()
-                        runTimer.resume()
+                        resumeTimer()
+                        //runTimer.resume()
                     }
                 }
                 ServiceState.PAUSED -> {
                     Log.d(TAG, "Pause location tracking")
                     pauseTrackingService()
-                    runTimer.pause()
+                    pauseTimer()
+                    //runTimer.pause()
                 }
                 ServiceState.STOPPED -> {
                     Log.d(TAG, "Stop location tracking")
-                    firstRun = true
                     stopTrackingService()
-                    serviceState.removeObservers(this)
-                    runTimer.stop()
+                    stopTimer()
+                    //runTimer.stop()
                 }
             }
         })
     }
 
-    private fun observeTimer() {
-        runTimer.runDurationNotification.observe(this, { notificationTimeString ->
-            if (serviceState.value == ServiceState.RUNNING) {
-                serviceState.value?.let {
-                    NotificationUtils.updateNotification(this, notificationTimeString, it)
+    private fun startTrackingServiceInForeground() {
+        addEmptyPath()
+        startForeground(NOTIFICATION_ID, NotificationUtils.getRunTrackingNotification(this))
+        requestLocationUpdates()
+    }
+
+    private fun startTimer() {
+        Log.d(TAG, "---------------TIMER START---------------")
+        running = true
+        CoroutineScope(Dispatchers.Main).launch {
+            while (running) {
+                lapTime = System.currentTimeMillis() - lapStartTimeStamp
+                //Log.d(TAG,"---------------TIMER POSTING NEW VALUE---------------")
+                runDuration.postValue(getDisplayTime(totalRunTime + lapTime))
+                if (nextSecondHasElapsed(totalRunTime + lapTime)) {
+                    runDurationNotification.postValue(getNotificationDisplayTime(totalRunTime + lapTime))
+                    nextSecondToLookFor++
                 }
-            }
-        })
-        runTimer.runDuration.observe(this, { runDurationTimeString ->
-            if (serviceState.value == ServiceState.RUNNING)
-                runTime.postValue(runDurationTimeString)
-        })
-    }
 
-    private fun postInitialValues() {
-        runPaths.postValue(mutableListOf())
-        runTime.postValue("00:00:00:00")
-        serviceState.postValue(ServiceState.INIT)
-    }
-
-    private fun pauseTrackingService() {
-        stopLocationUpdates()
-        if (serviceState.value == ServiceState.RUNNING || serviceState.value == ServiceState.PAUSED) {
-            runTimer.runDurationNotification.value?.let {
-                NotificationUtils.updateNotification(this, it, ServiceState.PAUSED)
+                delay(50L)
             }
+            totalRunTime += lapTime
         }
     }
 
     private fun resumeTrackingService() {
         addEmptyPath()
         requestLocationUpdates()
+    }
+
+    private fun resumeTimer() {
+        Log.d(TAG, "---------------TIMER RESUME---------------")
+        running = true
+        lapStartTimeStamp = System.currentTimeMillis()
+        startTimer()
+    }
+
+    private fun pauseTrackingService() {
+        stopLocationUpdates()
+        runDurationNotification.value?.let {
+            NotificationUtils.updateNotification(this, it, ServiceState.PAUSED)
+        }
+    }
+
+    private fun pauseTimer() {
+        Log.d(TAG, "---------------TIMER PAUSE---------------")
+        running = false
     }
 
     private fun stopTrackingService() {
@@ -151,6 +179,34 @@ class TrackingService : LifecycleService() {
         stopForeground(true)
         stopSelf()
     }
+
+    private fun stopTimer() {
+        Log.d(TAG, "---------------TIMER STOP---------------")
+        stopTime = System.currentTimeMillis()
+        running = false
+        totalRunTime = 0L
+        lapTime = 0L
+    }
+
+    private fun postInitialValues() {
+        runPaths.postValue(mutableListOf())
+        this.startTimeStamp = System.currentTimeMillis()
+        this.lapStartTimeStamp = System.currentTimeMillis()
+    }
+
+    private fun observeTimerData() {
+        runDurationNotification.observe(this, { notificationTimeString ->
+            serviceState.value?.let {
+                if (serviceState.value != ServiceState.STOPPED) {
+                    NotificationUtils.updateNotification(
+                        this, notificationTimeString,
+                        it
+                    )
+                }
+            }
+        })
+    }
+
 
     private fun addEmptyPath() {
         runPaths.value?.apply {
@@ -168,12 +224,6 @@ class TrackingService : LifecycleService() {
                 runPaths.postValue(this)
             }
         }
-    }
-
-    private fun startTrackingServiceInForeground() {
-        addEmptyPath()
-        startForeground(NOTIFICATION_ID, NotificationUtils.getRunTrackingNotification(this))
-        requestLocationUpdates()
     }
 
     @SuppressLint("MissingPermission")
@@ -211,6 +261,38 @@ class TrackingService : LifecycleService() {
                 }
             }
         }
+    }
+
+    private fun nextSecondHasElapsed(ms: Long): Boolean {
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(ms)
+        return seconds >= nextSecondToLookFor
+    }
+
+    private fun getDisplayTime(ms: Long): String {
+        var milliseconds = ms
+        val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
+        milliseconds -= TimeUnit.HOURS.toMillis(hours)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+        milliseconds -= TimeUnit.MINUTES.toMillis(minutes)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds)
+        milliseconds -= TimeUnit.SECONDS.toMillis(seconds)
+        milliseconds /= 10
+        return "${if (hours < 10) "0" else ""}$hours:" +
+                "${if (minutes < 10) "0" else ""}$minutes:" +
+                "${if (seconds < 10) "0" else ""}$seconds:" +
+                "${if (milliseconds < 10) "0" else ""}$milliseconds"
+    }
+
+    private fun getNotificationDisplayTime(ms: Long): String {
+        var milliseconds = ms
+        val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
+        milliseconds -= TimeUnit.HOURS.toMillis(hours)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+        milliseconds -= TimeUnit.MINUTES.toMillis(minutes)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds)
+        return "${if (hours < 10) "0" else ""}$hours:" +
+                "${if (minutes < 10) "0" else ""}$minutes:" +
+                "${if (seconds < 10) "0" else ""}$seconds"
     }
 
 }
