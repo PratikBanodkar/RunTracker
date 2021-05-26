@@ -49,15 +49,6 @@ object NotificationUtils {
         PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    private fun getStopTrackingPendingIntent(context: Context) = PendingIntent.getService(
-        context,
-        2,
-        Intent(context, TrackingService::class.java).also {
-            it.action = Constants.ACTION_STOP_SERVICE
-        },
-        PendingIntent.FLAG_UPDATE_CURRENT
-    )
-
     private fun getResumeTrackingPendingIntent(context: Context) = PendingIntent.getService(
         context,
         3,
@@ -73,7 +64,6 @@ object NotificationUtils {
         notificationDisplayTime: String
     ): Notification {
         val pauseTrackingPendingIntent = getPauseTrackingPendingIntent(context)
-        val stopTrackingPendingIntent = getStopTrackingPendingIntent(context)
         val resumeTrackingPendingIntent = getResumeTrackingPendingIntent(context)
 
         if (aboveOrEqualToAndroidO())
@@ -84,20 +74,22 @@ object NotificationUtils {
                 .setAutoCancel(false)
                 .setOngoing(true)
                 .setSmallIcon(R.drawable.ic_run)
-                .setContentTitle("Run Tracker")
+                .setContentTitle(context.getString(R.string.app_name))
                 .setContentText(notificationDisplayTime)
                 .setContentIntent(getMainActivityPendingIntent(context))
 
         if (serviceState == ServiceState.RUNNING) {
-            notificationBuilder.addAction(R.drawable.ic_pause, "PAUSE", pauseTrackingPendingIntent)
-            notificationBuilder.addAction(R.drawable.ic_stop, "STOP", stopTrackingPendingIntent)
-        } else if (serviceState == ServiceState.PAUSED) {
             notificationBuilder.addAction(
                 R.drawable.ic_pause,
-                "RESUME",
+                context.getString(R.string.pause),
+                pauseTrackingPendingIntent
+            )
+        } else if (serviceState == ServiceState.PAUSED) {
+            notificationBuilder.addAction(
+                R.drawable.ic_play,
+                context.getString(R.string.resume),
                 resumeTrackingPendingIntent
             )
-            notificationBuilder.addAction(R.drawable.ic_stop, "STOP", stopTrackingPendingIntent)
         }
         return notificationBuilder.build()
     }

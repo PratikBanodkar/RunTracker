@@ -1,4 +1,10 @@
 <resources>
     <string name="app_name">Run Tracker</string>
     <string name="google_maps_key">API KEY HERE</string>
+    <string name="pause">PAUSE</string>
+    <string name="resume">RESUME</string>
+    <string name="cancel_run">Cancel Run</string>
+    <string name="sure_want_to_cancel">Are you sure you want to cancel this run?\nAll data for this run will be lost!</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
 </resources>
