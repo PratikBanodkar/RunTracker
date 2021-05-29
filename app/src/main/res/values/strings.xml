@@ -10,4 +10,5 @@
     <string name="sure_you_want_to_finish_run_and_save_it">Are you sure you want to finish this run and save it?</string>
     <string name="finish_run">Finish Run</string>
     <string name="run_saved_successfully">Your run has been saved successfully</string>
+    <string name="you_have_no_runs_saved">You have no runs saved</string>
 </resources>
