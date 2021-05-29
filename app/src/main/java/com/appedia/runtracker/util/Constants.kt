@@ -1,6 +1,8 @@
 package com.appedia.runtracker.util
 
 import android.graphics.Color
+import android.location.Location
+import com.appedia.runtracker.services.Path
 
 object Constants {
 
@@ -18,4 +20,51 @@ object Constants {
     const val POLYLINE_COLOR = Color.RED
     const val POLYLINE_WIDTH = 8f
     const val MAP_ZOOM = 16f
+    const val MET = 4
+
+    fun calculatePathDistance(path: Path): Float {
+        var distance = 0f
+        for (i in 0..path.size - 2) {
+            val point1 = path[i]
+            val point2 = path[i + 1]
+            val results = FloatArray(1)
+            Location.distanceBetween(
+                point1.latitude,
+                point1.longitude,
+                point2.latitude,
+                point2.longitude,
+                results
+            )
+            distance += results[0]
+        }
+        return distance
+    }
+
+    fun getDistanceInKilometers(distanceInMeters: Float) = distanceInMeters / 1000f
+
+    fun getRunTimeInHours(runTimeForUi: String?): Float {
+        val millis = runTimeForUi?.split(':')?.get(3)?.toLong() ?: 0L
+        val seconds = runTimeForUi?.split(':')?.get(2)?.toLong() ?: 0L
+        val minutes = runTimeForUi?.split(':')?.get(1)?.toLong() ?: 0L
+        val hours = runTimeForUi?.split(':')?.get(0)?.toLong() ?: 0L
+        var totalTimeInMillis = 0L
+        totalTimeInMillis += millis
+        totalTimeInMillis += (seconds * 1000)
+        totalTimeInMillis += (minutes * 60 * 1000)
+        totalTimeInMillis += (hours * 60 * 60 * 1000)
+        return totalTimeInMillis / 1000f / 60 / 60
+    }
+
+    fun getRunDurationInMillis(runTimeForUi: String?): Long {
+        val millis = runTimeForUi?.split(':')?.get(3)?.toLong() ?: 0L
+        val seconds = runTimeForUi?.split(':')?.get(2)?.toLong() ?: 0L
+        val minutes = runTimeForUi?.split(':')?.get(1)?.toLong() ?: 0L
+        val hours = runTimeForUi?.split(':')?.get(0)?.toLong() ?: 0L
+        var totalTimeInMillis = 0L
+        totalTimeInMillis += millis
+        totalTimeInMillis += (seconds * 1000)
+        totalTimeInMillis += (minutes * 60 * 1000)
+        totalTimeInMillis += (hours * 60 * 60 * 1000)
+        return totalTimeInMillis
+    }
 }
