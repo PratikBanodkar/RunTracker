@@ -2,9 +2,7 @@ package com.appedia.runtracker.ui.fragments
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -37,12 +35,14 @@ class TrackingFragment : Fragment() {
     private lateinit var binding: FragmentTrackingBinding
     private var map: GoogleMap? = null
     private val TAG = TrackingFragment::class.java.simpleName
+    private var menu: Menu? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        setHasOptionsMenu(true)
         super.onCreateView(inflater, container, savedInstanceState)
         binding = FragmentTrackingBinding.inflate(inflater)
         return binding.root
@@ -58,6 +58,25 @@ class TrackingFragment : Fragment() {
         initClickListeners()
         observeServiceData()
         setUpBackPressedCallback()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.menu_tracking_toolbar, menu)
+        this.menu = menu
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.cancelTracking -> showCancelRunConfirmationAlert()
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        if (TrackingService.serviceState.value == ServiceState.RUNNING || TrackingService.serviceState.value == ServiceState.PAUSED)
+            this.menu?.getItem(0)?.isVisible = true
     }
 
     private fun setUpBackPressedCallback() {
@@ -76,10 +95,12 @@ class TrackingFragment : Fragment() {
                 ServiceState.RUNNING -> {
                     showPauseButton()
                     showStopButton()
+                    showCancelButton()
                 }
                 ServiceState.PAUSED -> {
                     showPlayButton()
                     showStopButton()
+                    showCancelButton()
                 }
                 else -> {
                 }
@@ -109,7 +130,7 @@ class TrackingFragment : Fragment() {
 
         }
         binding.buttonStop.setOnClickListener {
-            stopTrackingService()
+            finishCurrentRun()
         }
     }
 
@@ -120,18 +141,13 @@ class TrackingFragment : Fragment() {
         }
     }
 
-    private fun stopTrackingService() {
-        showCancelRunConfirmationAlert()
-    }
-
     private fun showCancelRunConfirmationAlert() {
         val alertDialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.cancel_run))
             .setIcon(R.drawable.ic_cancel)
             .setMessage(getString(R.string.sure_want_to_cancel))
             .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                sendCommandToTrackingService(ACTION_STOP_SERVICE)
-                onBackPressed()
+                cancelCurrentRun()
             }
             .setNegativeButton(getString(R.string.no)) { dialog, _ ->
                 dialog.cancel()
@@ -139,8 +155,32 @@ class TrackingFragment : Fragment() {
         alertDialog.show()
     }
 
+    private fun cancelCurrentRun() {
+        sendCommandToTrackingService(ACTION_STOP_SERVICE)
+        onBackPressed()
+    }
+
     private fun onBackPressed() {
         findNavController().popBackStack(R.id.homeFragment, false);
+    }
+
+
+    private fun showFinishRunConfirmationAlert() {
+        val alertDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Finish Run")
+            .setIcon(R.drawable.ic_run)
+            .setMessage(getString(R.string.sure_you_want_to_finish_run_and_save_it))
+            .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                finishCurrentRun()
+            }
+            .setNegativeButton(getString(R.string.no)) { dialog, _ ->
+                dialog.cancel()
+            }
+        alertDialog.show()
+    }
+
+    private fun finishCurrentRun() {
+
     }
 
     private fun startOrResumeTrackingService() {
@@ -170,6 +210,10 @@ class TrackingFragment : Fragment() {
     private fun showPlayButton() {
         binding.buttonPlayPause.icon =
             ResourcesCompat.getDrawable(resources, R.drawable.ic_play, null)
+    }
+
+    private fun showCancelButton() {
+        this.menu?.getItem(0)?.isVisible = true
     }
 
     private fun sendCommandToTrackingService(action: String) =
