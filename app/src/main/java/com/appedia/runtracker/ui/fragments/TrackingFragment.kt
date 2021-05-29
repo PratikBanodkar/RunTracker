@@ -2,15 +2,13 @@ package com.appedia.runtracker.ui.fragments
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.activity.OnBackPressedCallback
+import android.view.*
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.appedia.runtracker.R
+import com.appedia.runtracker.data.db.entities.Run
 import com.appedia.runtracker.databinding.FragmentTrackingBinding
 import com.appedia.runtracker.services.ListOfPaths
 import com.appedia.runtracker.services.ServiceState
@@ -21,13 +19,21 @@ import com.appedia.runtracker.util.Constants.ACTION_PAUSE_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_START_OR_RESUME_SERVICE
 import com.appedia.runtracker.util.Constants.ACTION_STOP_SERVICE
 import com.appedia.runtracker.util.Constants.MAP_ZOOM
+import com.appedia.runtracker.util.Constants.MET
 import com.appedia.runtracker.util.Constants.POLYLINE_COLOR
 import com.appedia.runtracker.util.Constants.POLYLINE_WIDTH
+import com.appedia.runtracker.util.Constants.calculatePathDistance
+import com.appedia.runtracker.util.Constants.getDistanceInKilometers
+import com.appedia.runtracker.util.Constants.getRunDurationInMillis
+import com.appedia.runtracker.util.Constants.getRunTimeInHours
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.*
 
 
 @AndroidEntryPoint
@@ -37,12 +43,17 @@ class TrackingFragment : Fragment() {
     private lateinit var binding: FragmentTrackingBinding
     private var map: GoogleMap? = null
     private val TAG = TrackingFragment::class.java.simpleName
+    private var menu: Menu? = null
+    private lateinit var runPaths: ListOfPaths
+    private lateinit var runTime: String
+    private val weightInKg = 80
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        setHasOptionsMenu(true)
         super.onCreateView(inflater, container, savedInstanceState)
         binding = FragmentTrackingBinding.inflate(inflater)
         return binding.root
@@ -57,17 +68,25 @@ class TrackingFragment : Fragment() {
         getGoogleMap()
         initClickListeners()
         observeServiceData()
-        setUpBackPressedCallback()
     }
 
-    private fun setUpBackPressedCallback() {
-        val callback: OnBackPressedCallback =
-            object : OnBackPressedCallback(true /* enabled by default */) {
-                override fun handleOnBackPressed() {
-                    onBackPressed()
-                }
-            }
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.menu_tracking_toolbar, menu)
+        this.menu = menu
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.cancelTracking -> showCancelRunConfirmationAlert()
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu) {
+        super.onPrepareOptionsMenu(menu)
+        if (TrackingService.serviceState.value == ServiceState.RUNNING || TrackingService.serviceState.value == ServiceState.PAUSED)
+            this.menu?.getItem(0)?.isVisible = true
     }
 
     private fun updateButtonsBasedOnServiceState(serviceState: ServiceState?) {
@@ -76,10 +95,12 @@ class TrackingFragment : Fragment() {
                 ServiceState.RUNNING -> {
                     showPauseButton()
                     showStopButton()
+                    showCancelButton()
                 }
                 ServiceState.PAUSED -> {
                     showPlayButton()
                     showStopButton()
+                    showCancelButton()
                 }
                 else -> {
                 }
@@ -93,12 +114,17 @@ class TrackingFragment : Fragment() {
         })
 
         TrackingService.runPaths.observe(viewLifecycleOwner, { listOfPaths ->
-            drawLatestPathFromListOfPaths(listOfPaths)
+            if (TrackingService.serviceState.value == ServiceState.RUNNING) {
+                this.runPaths = listOfPaths
+                drawLatestPathFromListOfPaths(listOfPaths)
+            }
         })
 
         TrackingService.runTime.observe(viewLifecycleOwner, { runDuration ->
-            if (TrackingService.serviceState.value == ServiceState.RUNNING)
+            if (TrackingService.serviceState.value == ServiceState.RUNNING) {
+                this.runTime = runDuration
                 binding.textViewTimer.text = runDuration
+            }
         })
     }
 
@@ -109,8 +135,9 @@ class TrackingFragment : Fragment() {
 
         }
         binding.buttonStop.setOnClickListener {
-            stopTrackingService()
+            showFinishRunConfirmationAlert()
         }
+
     }
 
     private fun getGoogleMap() {
@@ -120,18 +147,13 @@ class TrackingFragment : Fragment() {
         }
     }
 
-    private fun stopTrackingService() {
-        showCancelRunConfirmationAlert()
-    }
-
     private fun showCancelRunConfirmationAlert() {
         val alertDialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.cancel_run))
             .setIcon(R.drawable.ic_cancel)
             .setMessage(getString(R.string.sure_want_to_cancel))
             .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                sendCommandToTrackingService(ACTION_STOP_SERVICE)
-                onBackPressed()
+                cancelCurrentRun()
             }
             .setNegativeButton(getString(R.string.no)) { dialog, _ ->
                 dialog.cancel()
@@ -139,8 +161,30 @@ class TrackingFragment : Fragment() {
         alertDialog.show()
     }
 
-    private fun onBackPressed() {
-        findNavController().popBackStack(R.id.homeFragment, false);
+    private fun cancelCurrentRun() {
+        sendCommandToTrackingService(ACTION_STOP_SERVICE)
+        findNavController().popBackStack()
+    }
+
+
+    private fun showFinishRunConfirmationAlert() {
+        val alertDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.finish_run))
+            .setIcon(R.drawable.ic_run)
+            .setMessage(getString(R.string.sure_you_want_to_finish_run_and_save_it))
+            .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                finishCurrentRun()
+            }
+            .setNegativeButton(getString(R.string.no)) { dialog, _ ->
+                dialog.cancel()
+            }
+        alertDialog.show()
+    }
+
+    private fun finishCurrentRun() {
+        sendCommandToTrackingService(ACTION_STOP_SERVICE)
+        zoomMapToShowPath()
+        saveRunInDB()
     }
 
     private fun startOrResumeTrackingService() {
@@ -172,6 +216,10 @@ class TrackingFragment : Fragment() {
             ResourcesCompat.getDrawable(resources, R.drawable.ic_play, null)
     }
 
+    private fun showCancelButton() {
+        this.menu?.getItem(0)?.isVisible = true
+    }
+
     private fun sendCommandToTrackingService(action: String) =
         Intent(requireContext(), TrackingService::class.java).also {
             it.action = action
@@ -190,6 +238,61 @@ class TrackingFragment : Fragment() {
             map?.addPolyline(polylineOptions)
         }
         updateMapCameraToUserLocation(listOfPaths)
+    }
+
+    private fun zoomMapToShowPath() {
+        val latLngBoundsBuilder = LatLngBounds.Builder()
+        val runPaths = TrackingService.runPaths.value
+        if (runPaths != null) {
+            for (paths in runPaths) {
+                for (position in paths) {
+                    latLngBoundsBuilder.include(position)
+                }
+            }
+        }
+        val bounds = latLngBoundsBuilder.build()
+        map?.moveCamera(
+            CameraUpdateFactory.newLatLngBounds(
+                bounds,
+                binding.mapView.width,
+                binding.mapView.height,
+                (binding.mapView.height * 0.05f).toInt()
+            )
+        )
+    }
+
+    private fun saveRunInDB() {
+        map?.snapshot { bitmap ->
+            var distanceInMeters = 0f
+            for (path in runPaths) {
+                distanceInMeters += calculatePathDistance(path)
+            }
+            val avgSpeedKMPH =
+                getDistanceInKilometers(distanceInMeters) / getRunTimeInHours(this.runTime)
+
+            val runDateInMillis = Calendar.getInstance().timeInMillis
+
+            val runDurationInMillis = getRunDurationInMillis(this.runTime)
+
+            //Total calories burned = Duration (in minutes)*(MET*3.5*weight in kg)/200
+            // Considering MET = 4
+            val caloriesBurned = (runDurationInMillis / 1000f / 60) * (MET * 3.5 * weightInKg) / 200
+            val run = Run(
+                image = bitmap,
+                runDateInMillis = runDateInMillis,
+                avgSpeedKMPH = avgSpeedKMPH,
+                distanceMTR = distanceInMeters.toInt(),
+                runDurationInMillis = runDurationInMillis,
+                caloriesBurned = caloriesBurned.toInt()
+            )
+            viewModel.insertRun(run)
+            Snackbar.make(
+                requireActivity().findViewById(R.id.rootView),
+                getString(R.string.run_saved_successfully),
+                Snackbar.LENGTH_LONG
+            ).show()
+            findNavController().popBackStack()
+        }
     }
 
     private fun updateMapCameraToUserLocation(listOfPaths: ListOfPaths) {
