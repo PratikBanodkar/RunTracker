@@ -7,10 +7,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.appedia.runtracker.R
+import com.appedia.runtracker.adapters.RunAdapter
 import com.appedia.runtracker.databinding.FragmentHomeBinding
 import com.appedia.runtracker.ui.viewmodels.MainViewModel
 import com.appedia.runtracker.util.PermissionUtils
+import com.appedia.runtracker.util.gone
+import com.appedia.runtracker.util.show
 import dagger.hilt.android.AndroidEntryPoint
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -18,7 +22,8 @@ import pub.devrel.easypermissions.EasyPermissions
 class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
 
     private val viewModel : MainViewModel by viewModels()
-    private lateinit var binding : FragmentHomeBinding
+    private lateinit var binding: FragmentHomeBinding
+    private lateinit var runAdapter: RunAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,18 +39,42 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         requestPermissions()
+        setupRecyclerView()
+        setClickListeners()
+        observeViewModelData()
+    }
+
+    private fun setupRecyclerView() = binding.recyclerViewRuns.apply {
+        runAdapter = RunAdapter()
+        adapter = runAdapter
+        layoutManager = LinearLayoutManager(requireContext())
+        addItemDecoration(RunAdapter.SpacingItemDecoration(resources.getDimensionPixelSize(R.dimen.recycler_view_item_spacing)))
+    }
+
+    private fun setClickListeners() {
         binding.fabNewRun.setOnClickListener {
             navigateToTrackingFragment()
         }
     }
 
+    private fun observeViewModelData() {
+        viewModel.runsSortedByDate.observe(viewLifecycleOwner, {
+            if (it.isEmpty())
+                binding.textViewNoRunsSaved.show()
+            else {
+                binding.textViewNoRunsSaved.gone()
+                runAdapter.submitList(it)
+            }
+        })
+    }
+
     private fun navigateToTrackingFragment() {
-        if(findNavController().currentDestination?.id == R.id.homeFragment)
+        if (findNavController().currentDestination?.id == R.id.homeFragment)
             findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToTrackingFragment())
     }
 
-    private fun requestPermissions(){
-        if(PermissionUtils.hasLocationPermission(requireContext())){
+    private fun requestPermissions() {
+        if (PermissionUtils.hasLocationPermission(requireContext())) {
             return
         }
         PermissionUtils.requestLocationPermissions(this)

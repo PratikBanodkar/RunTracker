@@ -3,6 +3,9 @@ package com.appedia.runtracker.util
 import android.graphics.Color
 import android.location.Location
 import com.appedia.runtracker.services.Path
+import java.text.SimpleDateFormat
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 object Constants {
 
@@ -67,4 +70,32 @@ object Constants {
         totalTimeInMillis += (hours * 60 * 60 * 1000)
         return totalTimeInMillis
     }
+
+    fun getFormattedDateForUI(runDateInMillis: Long): String {
+        val calendar = Calendar.getInstance().apply {
+            timeInMillis = runDateInMillis
+        }
+        val dateFormat = SimpleDateFormat("dd MMMM yy", Locale.getDefault())
+        return dateFormat.format(calendar.time)
+    }
+
+    fun getFormattedRunTimeForUI(runTimeInMillis: Long): String {
+        var milliseconds = runTimeInMillis
+        val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
+        milliseconds -= TimeUnit.HOURS.toMillis(hours)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
+        milliseconds -= TimeUnit.MINUTES.toMillis(minutes)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds)
+        val returnString = (if (hours > 0) "${hours}h" else "") +
+                (if (minutes > 0) " ${minutes}m" else "") +
+                (if (seconds > 0) " ${seconds}s" else "")
+        return returnString.trim()
+    }
+
+    fun getFormattedDistanceForUI(distanceInMeters: Int) =
+        String.format("%.1f", distanceInMeters / 1000f) + " km"
+
+    fun getFormattedSpeedForUI(speedInKMPH: Float) = String.format("%.1f", speedInKMPH) + " km/h"
+
+    fun getFormattedCaloriesForUI(caloriesBurned: Int) = "$caloriesBurned kcal"
 }
