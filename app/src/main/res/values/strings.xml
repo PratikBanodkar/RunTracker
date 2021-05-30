@@ -11,4 +11,11 @@
     <string name="finish_run">Finish Run</string>
     <string name="run_saved_successfully">Your run has been saved successfully</string>
     <string name="you_have_no_runs_saved">You have no runs saved</string>
+    <string-array name="filter_options">
+        <item>Date</item>
+        <item>Running Time</item>
+        <item>Distance</item>
+        <item>Average Speed</item>
+        <item>Calories Burned</item>
+    </string-array>
 </resources>

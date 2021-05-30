@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -19,11 +21,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import pub.devrel.easypermissions.EasyPermissions
 
 @AndroidEntryPoint
-class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
+class HomeFragment : Fragment(), EasyPermissions.PermissionCallbacks {
 
-    private val viewModel : MainViewModel by viewModels()
+    private val viewModel: MainViewModel by viewModels()
     private lateinit var binding: FragmentHomeBinding
     private lateinit var runAdapter: RunAdapter
+    private lateinit var spinnerAdapter: ArrayAdapter<String>
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,6 +43,7 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
         super.onViewCreated(view, savedInstanceState)
         requestPermissions()
         setupRecyclerView()
+        setupFilterSpinner()
         setClickListeners()
         observeViewModelData()
     }
@@ -51,6 +55,31 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
         addItemDecoration(RunAdapter.SpacingItemDecoration(resources.getDimensionPixelSize(R.dimen.recycler_view_item_spacing)))
     }
 
+    private fun setupFilterSpinner() {
+        binding.spinnerFilter.apply {
+            spinnerAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                resources.getStringArray(R.array.filter_options)
+            )
+            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            adapter = spinnerAdapter
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    viewModel.updateFilterOption(position)
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
+
+            }
+        }
+    }
+
     private fun setClickListeners() {
         binding.fabNewRun.setOnClickListener {
             navigateToTrackingFragment()
@@ -58,7 +87,7 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
     }
 
     private fun observeViewModelData() {
-        viewModel.runsSortedByDate.observe(viewLifecycleOwner, {
+        viewModel.runs.observe(viewLifecycleOwner, {
             if (it.isEmpty())
                 binding.textViewNoRunsSaved.show()
             else {
@@ -83,9 +112,9 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {}
 
     override fun onPermissionsDenied(requestCode: Int, perms: MutableList<String>) {
-        if(PermissionUtils.somePermissionDeniedForever(this,perms)){
+        if (PermissionUtils.somePermissionDeniedForever(this, perms)) {
             PermissionUtils.showAppSettingsDialog(this)
-        }else{
+        } else {
             requestPermissions()
         }
     }
@@ -96,7 +125,7 @@ class HomeFragment : Fragment() , EasyPermissions.PermissionCallbacks{
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        PermissionUtils.onRequestPermissionResult(requestCode,permissions,grantResults,this)
+        PermissionUtils.onRequestPermissionResult(requestCode, permissions, grantResults, this)
 
     }
 }
