@@ -25,4 +25,8 @@
         <item>Calories Burned</item>
     </string-array>
     <string name="lets_run_user">Let\'s run %s !</string>
+    <string name="total_running_time">Total Running Time</string>
+    <string name="total_distance_run">Total Distance Run</string>
+    <string name="total_calories_burned">Total Calories Burned</string>
+    <string name="average_speed">Average Speed</string>
 </resources>
