@@ -12,6 +12,11 @@
     <string name="run_saved_successfully">Your run has been saved successfully</string>
     <string name="you_have_no_runs_saved">You have no runs saved</string>
     <string name="please_fill_out_this_field">Please fill out this field !</string>
+    <string name="continue_button_text">Continue</string>
+    <string name="apply_changes">Apply Changes</string>
+    <string name="your_name">Your Name</string>
+    <string name="your_weight_kg">Your Weight (kg)</string>
+    <string name="saved_changes">Saved changes</string>
     <string-array name="filter_options">
         <item>Date</item>
         <item>Running Time</item>
@@ -19,4 +24,5 @@
         <item>Average Speed</item>
         <item>Calories Burned</item>
     </string-array>
+    <string name="lets_run_user">Let\'s run %s !</string>
 </resources>

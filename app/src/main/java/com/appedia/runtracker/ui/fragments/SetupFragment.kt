@@ -77,7 +77,8 @@ class SetupFragment : Fragment() {
                 .putFloat(KEY_WEIGHT, weight.toFloat())
                 .putBoolean(KEY_IS_SETUP_DONE, true)
                 .apply()
-            requireActivity().findViewById<TextView>(R.id.textViewTitle).text = "Let's run $name !"
+            requireActivity().findViewById<TextView>(R.id.textViewTitle).text =
+                getString(R.string.lets_run_user, name)
             return true
         }
     }
