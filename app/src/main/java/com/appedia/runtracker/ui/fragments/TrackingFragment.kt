@@ -34,6 +34,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
+import javax.inject.Inject
 
 
 @AndroidEntryPoint
@@ -46,7 +47,9 @@ class TrackingFragment : Fragment() {
     private var menu: Menu? = null
     private lateinit var runPaths: ListOfPaths
     private lateinit var runTime: String
-    private val weightInKg = 80
+
+    @set:Inject
+    var weightInKg = 80f
 
     override fun onCreateView(
         inflater: LayoutInflater,

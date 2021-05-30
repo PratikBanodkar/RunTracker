@@ -24,6 +24,10 @@ object Constants {
     const val POLYLINE_WIDTH = 8f
     const val MAP_ZOOM = 16f
     const val MET = 4
+    const val SHARED_PREFERENCES_NAME = "runtracker_shared_prefs"
+    const val KEY_NAME = "KEY_NAME"
+    const val KEY_WEIGHT = "KEY_WEIGHT"
+    const val KEY_IS_SETUP_DONE = "KEY_IS_SETUP_DONE"
 
     fun calculatePathDistance(path: Path): Float {
         var distance = 0f
