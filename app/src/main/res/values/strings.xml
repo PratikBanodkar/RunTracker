@@ -11,6 +11,7 @@
     <string name="finish_run">Finish Run</string>
     <string name="run_saved_successfully">Your run has been saved successfully</string>
     <string name="you_have_no_runs_saved">You have no runs saved</string>
+    <string name="please_fill_out_this_field">Please fill out this field !</string>
     <string-array name="filter_options">
         <item>Date</item>
         <item>Running Time</item>
