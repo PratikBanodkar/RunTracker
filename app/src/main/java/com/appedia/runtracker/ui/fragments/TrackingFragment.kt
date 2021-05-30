@@ -291,7 +291,7 @@ class TrackingFragment : Fragment() {
                 getString(R.string.run_saved_successfully),
                 Snackbar.LENGTH_LONG
             ).show()
-            findNavController().popBackStack()
+            findNavController().popBackStack(R.id.homeFragment, false)
         }
     }
 
