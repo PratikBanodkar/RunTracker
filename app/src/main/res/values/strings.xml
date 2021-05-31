@@ -12,6 +12,11 @@
     <string name="run_saved_successfully">Your run has been saved successfully</string>
     <string name="you_have_no_runs_saved">You have no runs saved</string>
     <string name="please_fill_out_this_field">Please fill out this field !</string>
+    <string name="continue_button_text">Continue</string>
+    <string name="apply_changes">Apply Changes</string>
+    <string name="your_name">Your Name</string>
+    <string name="your_weight_kg">Your Weight (kg)</string>
+    <string name="saved_changes">Saved changes</string>
     <string-array name="filter_options">
         <item>Date</item>
         <item>Running Time</item>
@@ -19,4 +24,26 @@
         <item>Average Speed</item>
         <item>Calories Burned</item>
     </string-array>
+    <string name="lets_run_user">Let\'s run %s !</string>
+    <string name="total_running_time">Total Running Time</string>
+    <string name="total_distance_run">Total Distance Run</string>
+    <string name="total_calories_burned">Total Calories Burned</string>
+    <string name="average_speed">Average Speed</string>
+    <string name="view_your_running_stats_over_time">View your running stats over time</string>
+    <string name="calories_burned">Calories Burned</string>
+    <string name="running_distance">Running Distance</string>
+    <string name="running_time">Running Time</string>
+    <string name="add_a_new_run">Add a new run</string>
+    <string name="total_run_duration_image">Run duration image</string>
+    <string name="total_run_distance_image">Total run distance image</string>
+    <string name="total_calories_burned_image">Total calories burned image</string>
+    <string name="average_speed_image">Average speed image</string>
+    <string name="map_snapshot_for_this_run">Map snapshot for this run</string>
+    <string name="sort_by">Sort By</string>
+    <string name="welcome_to_run_tracker">Welcome to Run Tracker</string>
+    <string name="please_enter_your_name_and_weight">Please enter your name and weight</string>
+    <string name="stopwatch_reset_time">00:00:00:00</string>
+    <string name="home">Home</string>
+    <string name="statistics">Statistics</string>
+    <string name="settings">Settings</string>
 </resources>

@@ -35,10 +35,6 @@
             android:name=".services.TrackingService"
             android:foregroundServiceType="location" />
 
-        <!--<service
-            android:name=".services.NewTrackingService"
-            android:foregroundServiceType="location" />-->
-
     </application>
 
 </manifest>

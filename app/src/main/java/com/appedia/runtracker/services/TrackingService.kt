@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.location.Location
 import android.os.Looper
-import android.util.Log
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.MutableLiveData
 import com.appedia.runtracker.util.Constants.ACTION_PAUSE_SERVICE
@@ -31,8 +30,6 @@ typealias ListOfPaths = MutableList<Path>
 @AndroidEntryPoint
 class TrackingService : LifecycleService() {
 
-    private val TAG = TrackingService::class.java.simpleName
-
     @Inject
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
@@ -49,7 +46,6 @@ class TrackingService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "onCreate() called")
         postInitialValues()
         observeServiceState()
         observeTimer()
@@ -57,21 +53,16 @@ class TrackingService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         intent?.let {
-            Log.d(TAG, "Received action = ${it.action}")
             when (it.action) {
                 ACTION_START_OR_RESUME_SERVICE -> {
-                    Log.d(TAG, "Service is now RUNNING")
                     serviceState.postValue(ServiceState.RUNNING)
                 }
                 ACTION_PAUSE_SERVICE -> {
-                    Log.d(TAG, "Service was running. Now being PAUSED")
                     serviceState.postValue(ServiceState.PAUSED)
                 }
                 ACTION_STOP_SERVICE -> {
-                    Log.d(TAG, "Service now being STOPPED")
                     serviceState.postValue(ServiceState.STOPPED)
                 }
-                else -> Log.d(TAG, "Unknown action. Bye bye")
             }
         }
         return super.onStartCommand(intent, flags, startId)
@@ -79,31 +70,28 @@ class TrackingService : LifecycleService() {
 
     private fun observeServiceState() {
         serviceState.observe(this, { state ->
-            Log.d(TAG, "Service state got observed with state = $state")
             when (state) {
                 ServiceState.RUNNING -> {
                     if (firstRun) {
-                        Log.d(TAG, "Start location tracking")
                         startTrackingServiceInForeground()
                         runTimer.start()
                         firstRun = false
                     } else {
-                        Log.d(TAG, "Resume location tracking")
                         resumeTrackingService()
                         runTimer.resume()
                     }
                 }
                 ServiceState.PAUSED -> {
-                    Log.d(TAG, "Pause location tracking")
                     pauseTrackingService()
                     runTimer.pause()
                 }
                 ServiceState.STOPPED -> {
-                    Log.d(TAG, "Stop location tracking")
                     firstRun = true
                     stopTrackingService()
                     serviceState.removeObservers(this)
                     runTimer.stop()
+                }
+                else -> { /* NO-OP */
                 }
             }
         })
@@ -146,7 +134,6 @@ class TrackingService : LifecycleService() {
     private fun stopTrackingService() {
         stopLocationUpdates()
         // DO MORE STUFF HERE
-        Log.d(TAG, "# of Paths in Run = ${runPaths.value?.size} \nAll paths = \n${runPaths.value}")
         postInitialValues()
         stopForeground(true)
         stopSelf()
@@ -203,10 +190,6 @@ class TrackingService : LifecycleService() {
                 for (location in locations) {
                     if (serviceState.value == ServiceState.RUNNING) {
                         addLocationInPath(location)
-                        Log.d(
-                            TAG,
-                            "Fetched new location = ${location.latitude},${location.longitude}"
-                        )
                     }
                 }
             }
