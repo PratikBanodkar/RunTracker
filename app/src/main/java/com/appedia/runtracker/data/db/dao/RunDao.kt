@@ -72,6 +72,30 @@ interface RunDao {
      * Get total calories burned across all runs
      */
     @Query("SELECT SUM(calories_burned) FROM run")
-    fun getTotalCaloriesBurned() : LiveData<Int>
+    fun getTotalCaloriesBurned(): LiveData<Int>
+
+    /**
+     * Get all average speeds starting from first run onwards
+     */
+    @Query("SELECT average_speed_kmph FROM run ORDER BY date_millis ASC")
+    fun getAllAverageSpeedsList(): LiveData<List<Float>>
+
+    /**
+     * Get all running times starting from first run onwards
+     */
+    @Query("SELECT duration_millis FROM run ORDER BY date_millis ASC")
+    fun getAllRunTimesList(): LiveData<List<Long>>
+
+    /**
+     * Get all calories burned starting from first run onwards
+     */
+    @Query("SELECT calories_burned FROM run ORDER BY date_millis ASC")
+    fun getAllCaloriesBurnedList(): LiveData<List<Int>>
+
+    /**
+     * Get all running distances starting from first run onwards
+     */
+    @Query("SELECT distance_mtr FROM run ORDER BY date_millis ASC")
+    fun getAllRunningDistancesList(): LiveData<List<Int>>
 
 }

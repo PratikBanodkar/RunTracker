@@ -30,4 +30,11 @@ class MainRepository @Inject constructor(
 
     fun getTotalCaloriesBurned() = dao.getTotalCaloriesBurned()
 
+    fun getAllRunTimesList() = dao.getAllRunTimesList()
+
+    fun getAllCaloriesBurnedList() = dao.getAllCaloriesBurnedList()
+
+    fun getAllRunningDistancesList() = dao.getAllRunningDistancesList()
+
+    fun getAllAverageSpeedsList() = dao.getAllAverageSpeedsList()
 }

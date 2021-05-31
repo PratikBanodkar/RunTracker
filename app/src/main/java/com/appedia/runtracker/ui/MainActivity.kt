@@ -1,12 +1,10 @@
 package com.appedia.runtracker.ui
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import com.appedia.runtracker.R
 import com.appedia.runtracker.databinding.ActivityMainBinding
@@ -25,7 +23,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         navigateToTrackingIfNeeded(intent)
         binding.bottomNavigationView.setupWithNavController(findNavController(R.id.navHostFragment))
-
+        binding.bottomNavigationView.setOnNavigationItemReselectedListener { /* NO-OP */ }
         findNavController(R.id.navHostFragment).addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
                 R.id.homeFragment,
